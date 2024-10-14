@@ -42,24 +42,28 @@ app.get('/', (req, res) => {
   res.send('Welcome to the Hospital API. Use /patients, /providers, or search endpoints.');
 });
 
+//  Question 1
 // Retrieve all patients
 app.get('/patients', (req, res) => {
   const query = 'SELECT patient_id, first_name, last_name, date_of_birth FROM patients';
   queryDB(query, [], res);
 });
 
+// Question 2
 // Retrieve all providers
 app.get('/providers', (req, res) => {
   const query = 'SELECT first_name, last_name, provider_specialty FROM providers';
   queryDB(query, [], res);
 });
 
+// Question 3
 // Filter patients by first name
 app.get('/patients/search', (req, res) => {
   const query = 'SELECT patient_id, first_name, last_name, date_of_birth FROM patients WHERE first_name = ?';
   queryDB(query, [req.query.first_name], res);
 });
 
+// Question 4
 // Retrieve providers by specialty
 app.get('/providers/search', (req, res) => {
   const query = 'SELECT first_name, last_name FROM providers WHERE provider_specialty = ?';

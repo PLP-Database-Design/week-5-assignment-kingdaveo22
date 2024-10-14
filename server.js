@@ -1,75 +1,73 @@
+// Import required modules
 const express = require('express');
 const mysql = require('mysql2');
-require('dotenv').config(); // Load environment variables from .env file
+const dotenv = require('dotenv');
 
+// Load environment variables
+dotenv.config();
+
+// Initialize Express app
 const app = express();
-app.use(express.json()); // Middleware to parse JSON
+app.use(express.json()); // Parse JSON bodies
 
-// Configure database connection
+// Create MySQL connection
 const db = mysql.createConnection({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USERNAME,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
+  host: process.env.DB_HOST,
+  user: process.env.DB_USERNAME,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
 });
 
 // Test the database connection
 db.connect((err) => {
+  if (err) {
+    console.error('Database connection failed: ', err);
+    process.exit(1); // Exit process if connection fails
+  }
+  console.log('Connected to the database.');
+});
+
+// Utility function to handle database queries
+const queryDB = (query, params, res) => {
+  db.query(query, params, (err, results) => {
     if (err) {
-        console.error('Database connection failed: ', err.stack);
-        return;
+      return res.status(500).json({ error: 'Database query failed' });
     }
-    console.log('Connected to database');
+    res.json(results);
+  });
+};
+
+// Add a default route for '/'
+app.get('/', (req, res) => {
+  res.send('Welcome to the Hospital API. Use /patients, /providers, or search endpoints.');
 });
 
-// 1. Retrieve all patients
+// Retrieve all patients
 app.get('/patients', (req, res) => {
-    const sql = 'SELECT patient_id, first_name, last_name, date_of_birth FROM patients';
-    db.query(sql, (err, results) => {
-        if (err) {
-            return res.status(500).json({ error: err.message });
-        }
-        res.json(results);
-    });
+  const query = 'SELECT patient_id, first_name, last_name, date_of_birth FROM patients';
+  queryDB(query, [], res);
 });
 
-// 2. Retrieve all providers
+// Retrieve all providers
 app.get('/providers', (req, res) => {
-    const sql = 'SELECT first_name, last_name, provider_specialty FROM providers';
-    db.query(sql, (err, results) => {
-        if (err) {
-            return res.status(500).json({ error: err.message });
-        }
-        res.json(results);
-    });
+  const query = 'SELECT first_name, last_name, provider_specialty FROM providers';
+  queryDB(query, [], res);
 });
 
-// 3. Filter patients by first name
-app.get('/patients/filter', (req, res) => {
-    const firstName = req.query.first_name;
-    const sql = 'SELECT patient_id, first_name, last_name, date_of_birth FROM patients WHERE first_name = ?';
-    db.query(sql, [firstName], (err, results) => {
-        if (err) {
-            return res.status(500).json({ error: err.message });
-        }
-        res.json(results);
-    });
+// Filter patients by first name
+app.get('/patients/search', (req, res) => {
+  const query = 'SELECT patient_id, first_name, last_name, date_of_birth FROM patients WHERE first_name = ?';
+  queryDB(query, [req.query.first_name], res);
 });
 
-// 4. Filter providers by specialty
-app.get('/providers/filter', (req, res) => {
-    const specialty = req.query.specialty;
-    const sql = 'SELECT first_name, last_name, provider_specialty FROM providers WHERE provider_specialty = ?';
-    db.query(sql, [specialty], (err, results) => {
-        if (err) {
-            return res.status(500).json({ error: err.message });
-        }
-        res.json(results);
-    });
+// Retrieve providers by specialty
+app.get('/providers/search', (req, res) => {
+  const query = 'SELECT first_name, last_name FROM providers WHERE provider_specialty = ?';
+  queryDB(query, [req.query.provider_specialty], res);
 });
 
 // Listen to the server
-const PORT = 3306;
+const PORT = 3000;
 app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+  console.log(`Server is running on http://localhost:${PORT}`);
 });
